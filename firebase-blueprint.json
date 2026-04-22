@@ -1,0 +1,36 @@
+{
+  "entities": {
+    "Query": {
+      "title": "Query",
+      "description": "A user's symptom analysis query and result.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "User UID who made the query"
+        },
+        "symptoms": {
+          "type": "string",
+          "description": "The symptoms queried"
+        },
+        "result": {
+          "type": "object",
+          "description": "The stringified or structured result of the triage"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp of the query"
+        }
+      },
+      "required": ["userId", "symptoms", "result", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/queries/{queryId}": {
+      "schema": {
+        "$ref": "#/entities/Query"
+      },
+      "description": "User queries"
+    }
+  }
+}

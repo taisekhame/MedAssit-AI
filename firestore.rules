@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} { 
+      allow read, write: if false; 
+    }
+    
+    // Primitive Definitions
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    // Validation Blueprint for Query
+    function isValidQuery(data, userId) {
+      // Strict Keys & Partial Updates (Create constraint)
+      return data.keys().hasAll(['userId', 'symptoms', 'result', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             // Identity Integrity
+             data.userId == request.auth.uid && 
+             data.userId == userId &&
+             // Type Safety & Boundary Limits
+             data.symptoms is string && data.symptoms.size() > 0 && data.symptoms.size() <= 8000 &&
+             data.result is map && 
+             // Temporal Integrity
+             data.createdAt == request.time;
+    }
+
+    match /users/{userId}/queries/{queryId} {
+      // Restrict all reads strictly to the owner
+      allow get: if isSignedIn() && request.auth.uid == userId && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && request.auth.uid == userId && resource.data.userId == request.auth.uid;
+      
+      // Allow creation through strict blueprint
+      allow create: if isSignedIn() && 
+                       isValidId(userId) && 
+                       isValidId(queryId) && 
+                       isValidQuery(incoming(), userId);
+                       
+      // Optional: Delete own queries
+      allow delete: if isSignedIn() && request.auth.uid == userId && resource.data.userId == request.auth.uid;
+    }
+  }
+}
