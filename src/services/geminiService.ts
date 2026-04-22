@@ -69,8 +69,19 @@ Evaluate these symptoms from the user:
 
     const result = JSON.parse(response.text) as TriageResult;
     return result;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error calling Gemini API:", error);
+    
+    const errorMessage = error?.message || "";
+    if (errorMessage.includes("429") || errorMessage.includes("Quota exceeded") || errorMessage.includes("RESOURCE_EXHAUSTED")) {
+      const match = errorMessage.match(/retry in ([\d\.]+)s/);
+      if (match) {
+        const seconds = Math.ceil(parseFloat(match[1]));
+        throw new Error(`API Rate limit reached (Free Tier Quota). Please wait ${seconds} seconds before trying again.`);
+      }
+      throw new Error("API Rate limit reached (Free Tier Quota). You are making too many requests too quickly. Please wait a minute and try again.");
+    }
+    
     throw new Error(error instanceof Error ? error.message : "Failed to analyze symptoms.");
   }
 }
