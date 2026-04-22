@@ -1,0 +1,6 @@
+{
+  "name": "MedAssist AI",
+  "description": "A symptom checker and health triage tool powered by Gemini AI, designed for African patients.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
